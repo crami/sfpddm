@@ -1,6 +1,8 @@
 sfpddm
 ======
 
+This is a fork of https://github.com/SloMusti/sfpddm
+
 Arduino library for interfacing SFP modules and reading DDM information as per SFF-8472. The library is following the standard but is not yet fully compliant, some additional rarely used functions need to be implemented for that.
 
 
