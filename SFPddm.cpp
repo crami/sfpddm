@@ -34,15 +34,15 @@ with the SFPddm library. If not, see http://www.gnu.org/licenses/.
 #define DDMADDR     0x51 // addr A2/3
 
 // Uncomment if HW SFP connections are present for Enhanced options
-#define HWSFP
+//#define HWSFP
 
 #ifdef HWSFP
 // Hardware SFP connections
-#define TX_DISABLE    A2
-#define TX_FAULT      A3
-#define RX_LOS        3 //int 1
+#define TX_DISABLE    A1
+#define TX_FAULT      A0
+#define RX_LOS        A3
 #define RATE_SELECT   A7
-#define MOD_DEF_0     A6
+#define MOD_DEF_0     A2
 
 #endif
 
@@ -93,7 +93,6 @@ uint8_t supported;
 //supported ddm modes flags
 uint8_t ddmmodes;
 //contains register A0/93
-
 
 // Constructor /////////////////////////////////////////////////////////////////
 
@@ -213,6 +212,34 @@ uint8_t SFPddm::readMeasurements(){
   
 return error;
 }
+
+uint8_t SFPddm::getVendor(char * vendor){
+  error|=I2c.read(INFOADDR, 20, 16, (byte*)vendor);
+  return error;
+}
+
+uint8_t SFPddm::getPartNr(char * partnr){
+  error|=I2c.read(INFOADDR, 40, 16, (byte*)partnr);
+  return error;
+}
+
+uint8_t SFPddm::getSerial(char * serial){
+  error|=I2c.read(INFOADDR, 68, 16, (byte*)serial);
+  return error;
+}
+
+uint8_t SFPddm::getBR(){
+  uint8_t br;
+  error|=I2c.read(INFOADDR, 12, 1, (byte*)&br);
+  return br;
+}
+
+uint8_t SFPddm::getLength9m(){
+  uint8_t length;
+  error|=I2c.read(INFOADDR, 14, 1, (byte*)&length);
+  return length;
+}
+
 
 // The function gets the value of the control register (0xA2 memory, register 110)
 uint8_t SFPddm::getControl(){

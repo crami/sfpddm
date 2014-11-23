@@ -47,6 +47,11 @@ class SFPddm
     uint16_t getRXpower();
     uint16_t getAlarms();
     uint16_t getWarnings();
+    uint8_t getVendor(char * vendor);
+    uint8_t getPartNr(char * partnr);
+    uint8_t getSerial(char * serial);
+    uint8_t getBR();
+    uint8_t getLength9m();
 
   // library-accessible "private" interface
   private:
