@@ -52,6 +52,7 @@ class SFPddm
     uint8_t getSerial(char * serial);
     uint8_t getBR();
     uint8_t getLength9m();
+    double uWtodBm(int uw);
 
   // library-accessible "private" interface
   private:

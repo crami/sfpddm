@@ -297,6 +297,14 @@ uint16_t SFPddm::getWarnings(){
   return measdata.warnings;
 }
 
+// Concert uW to dBm
+double SFPddm::uWtodBm(int uw) {
+  double dbm;
+  dbm=10 * log10(uw/1000.0);
+  return dbm;
+}
+      
+
 // Private Methods /////////////////////////////////////////////////////////////
 
 // The function retrieves callibration values
