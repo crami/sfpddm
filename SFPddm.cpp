@@ -33,20 +33,6 @@ with the SFPddm library. If not, see http://www.gnu.org/licenses/.
 #define INFOADDR    0x50 // addr A0/1
 #define DDMADDR     0x51 // addr A2/3
 
-// Uncomment if HW SFP connections are present for Enhanced options
-//#define HWSFP
-
-#ifdef HWSFP
-// Hardware SFP connections
-#define TX_DISABLE    A1
-#define TX_FAULT      A0
-#define RX_LOS        A3
-#define RATE_SELECT   A7
-#define MOD_DEF_0     A2
-
-#endif
-
-
 // Private variables
 
 // error variable
@@ -65,7 +51,7 @@ struct _cal{
 };
 _cal cal_general = {1,0,1,0,1,0,1,0};
 
-float cal_rxpower[5]; 
+float cal_rxpower[5];
 //raw measurement buffer
 uint8_t raw_buffer[22];
 //raw alarm and warnign buffer
@@ -110,17 +96,17 @@ uint8_t SFPddm::begin(void){
   I2c.pullup(true);
   I2c.setSpeed(1); //400kHz
   //I2c.timeOut(500); //500ms timeout
-  
+
   //reset error
   error=0x00;
-  
+
   #ifdef HWSFP
   // configure pins
-  pinMode(TX_DISABLE, OUTPUT); 
-  pinMode(TX_FAULT, INPUT); 
-  pinMode(RX_LOS, INPUT); 
-  pinMode(RATE_SELECT, OUTPUT); 
-  pinMode(MOD_DEF_0, INPUT);  
+  pinMode(TX_DISABLE, OUTPUT);
+  pinMode(TX_FAULT, INPUT);
+  pinMode(RX_LOS, INPUT);
+  pinMode(RATE_SELECT, OUTPUT);
+  pinMode(MOD_DEF_0, INPUT);
 
   // test if the device is inserted
   if(digitalRead(MOD_DEF_0)!=HIGH){
@@ -128,7 +114,7 @@ uint8_t SFPddm::begin(void){
     return error;
   }
   #endif
-  
+
   // test device communication and read modes
   error|=I2c.read(INFOADDR,92, 1,&supported);
   // stop if not present
@@ -138,10 +124,10 @@ uint8_t SFPddm::begin(void){
   // if DDM mode is supported and externally callibrated
   if(supported&0x40){
     // check which DDM modes are supported
-    error|=I2c.read(INFOADDR,93, 1,&ddmmodes); 
+    error|=I2c.read(INFOADDR,93, 1,&ddmmodes);
     getCalibrationData();
   }
-  
+
   return error;
 }
 
@@ -174,18 +160,18 @@ uint8_t SFPddm::readMeasurements(){
   int i;
   //read diagnostic measurements registers 96-105 of 0xA2, store them in buffer
   error|=I2c.read(DDMADDR, 96, 22, (byte*)&raw_buffer);
-  
+
   //copy raw measurements to results union
   uint8_t *p_meas = (uint8_t*)&measdata;
   for(i=0;i<22;i+=2){
     *p_meas++ =raw_buffer[i+1];
     *p_meas++ =raw_buffer[i];
   }
-  
-  
+
+
   //get raw values from hardware pins if enabled
   // txfaultstate (bit 2)
-  // rxlosstate (bit 1) 
+  // rxlosstate (bit 1)
   #ifdef HWSFP
   //mask
   measdata.status&=0xF9;
@@ -198,9 +184,9 @@ uint8_t SFPddm::readMeasurements(){
     measdata.status|=0x02;
   }
   #endif
-  
-  
-  
+
+
+
   //calibration if external data
   if(supported&0x10){
     measdata.temperature=calibrateTemperature(measdata.temperature, cal_general.t_slope, cal_general.t_off);
@@ -209,7 +195,7 @@ uint8_t SFPddm::readMeasurements(){
     measdata.TXpower=calibrateMeasurement(measdata.TXpower, cal_general.txp_slope, cal_general.txp_off);
     measdata.RXpower=calibrateRXpower(measdata.RXpower, &cal_rxpower[0]);
   }
-  
+
 return error;
 }
 
@@ -252,7 +238,7 @@ void SFPddm::setControl(uint8_t data){
   //write the byte (not all bits are writable!)
   error|=I2c.write(DDMADDR,110, 0x40);
   #endif
-  
+
   // Hardware control if enabled
   #ifdef HWSFP
   if((data&0x40)!=0x00){
@@ -260,7 +246,7 @@ void SFPddm::setControl(uint8_t data){
   }
   if((data&0x10)!=0x00){
     digitalWrite(TX_DISABLE, HIGH);
-  } 
+  }
   #endif
 }
 
@@ -303,7 +289,7 @@ double SFPddm::uWtodBm(int uw) {
   dbm=10 * log10(uw/1000.0);
   return dbm;
 }
-      
+
 
 // Private Methods /////////////////////////////////////////////////////////////
 
@@ -311,15 +297,15 @@ double SFPddm::uWtodBm(int uw) {
 void SFPddm::getCalibrationData(){
   // buffer for data
   uint8_t calData[36];
-  
+
   //read data
   error|=I2c.read(DDMADDR, 56, 36, &calData[0]);
   //loop variable
   int i;
-  
+
   //writing binary to the float register using pointers
   uint8_t *pRXcal = (uint8_t*)&cal_rxpower;
-  
+
   for(i=0;i<20;i++){
     //this goes from 0xA2 SFP bytes 56-75
     //write data to pointer location and decrement pointer
@@ -327,11 +313,11 @@ void SFPddm::getCalibrationData(){
     *pRXcal =calData[19-i];
     pRXcal++;
   }
-   
+
   //writing to uint16_t register using pointers
   //creating a pointer
   uint8_t *pCal = (uint8_t*)&cal_general;
-   
+
   for(i=20;i<36;i+=2){
   //this goes from 0xA2 SFP bytes 76-91
   //write data to pointer location and increment pointer
@@ -348,7 +334,7 @@ uint16_t SFPddm::calibrateMeasurement(uint16_t rawdata, uint16_t slope, int16_t 
   temporary *= rawdata;
   //safe to use signed for all function, values do not overflow
   int16_t result = (temporary>>8 + offset);
-  
+
   return result;
 }
 
@@ -359,7 +345,7 @@ int16_t SFPddm::calibrateTemperature(int16_t rawdata, uint16_t slope, int16_t of
   temporary *= rawdata;
   //safe to use signed for all function, values do not overflow
   int16_t result = (temporary>>8 + offset);
-  
+
   return result;
 }
 
@@ -367,13 +353,13 @@ uint16_t SFPddm::calibrateRXpower(uint16_t rawdata, float *calibrationRX)
 {
   uint16_t result;
   float temporary;
-  
+
   temporary = calibrationRX[4] * rawdata;
   temporary += calibrationRX[3] * rawdata;
   temporary += calibrationRX[2] * rawdata;
   temporary += calibrationRX[1] * rawdata;
   temporary += calibrationRX[0]; //offset
-  
+
   //Serial.print("RXcalibrated: ");
   //Serial.println(temporary);
 

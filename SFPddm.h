@@ -1,6 +1,6 @@
 /*
-  SFPddm.h - SFPddm library 
-  
+  SFPddm.h - SFPddm library
+
 Copyright 2013 Luka Mustafa - Musti, musti@wlan-si.net
 
 This file is part of the SFPddm library for Arduino
@@ -23,6 +23,19 @@ with the SFPddm library. If not, see http://www.gnu.org/licenses/.
 // ensure this library description is only included once
 #ifndef SFPddm_h
 #define SFPddm_h
+
+// Uncomment if HW SFP connections are present for Enhanced options
+#define HWSFP
+
+#ifdef HWSFP
+// Hardware SFP connections
+#define TX_DISABLE    A1
+#define TX_FAULT      A0
+#define RX_LOS        A3
+#define RATE_SELECT   A7
+#define MOD_DEF_0     A2
+
+#endif
 
 #include "Arduino.h"
 
@@ -63,4 +76,3 @@ class SFPddm
 };
 
 #endif
-
