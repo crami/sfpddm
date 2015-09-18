@@ -37,8 +37,8 @@ with the SFPddm library. If not, see http://www.gnu.org/licenses/.
 
 // error variable
 uint8_t error;
-// calibration data variables
 
+// calibration data variables
 struct _cal{
   uint16_t txc_slope;
   int16_t txc_off;
@@ -57,6 +57,30 @@ uint8_t raw_buffer[22];
 //raw alarm and warnign buffer
 uint8_t raw_alarmwarning[6];
 //measurement values
+
+struct _transchar {
+  uint8_t identifier;
+  uint8_t extidentifier;
+  uint8_t connector;
+  uint8_t transciever_res;
+  uint8_t transciever_sonet1;
+  uint8_t transciever_sonet2;
+  uint8_t transciever_ethernet;
+  uint8_t transciever_fc_ll;
+  uint8_t transciever_fc_tt;
+  uint8_t transciever_fc_tm;
+  uint8_t transciever_fc_speed;
+  uint8_t encoding;
+  uint8_t bitrate;
+  uint8_t RESERVED;
+  uint8_t length9mkm;
+  uint8_t length9m;
+  uint8_t length50m;
+  uint8_t length625m;
+  uint8_t lengthcu;
+  uint16_t wavelength;
+}; // 19 bytes + 2 bytes
+_transchar transchar={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 struct _meas {
   int16_t temperature; //reg A2/96-97
@@ -136,7 +160,6 @@ void SFPddm::getRawInfo(uint8_t addr, uint8_t *data){
 //implement when required
 }
 
-
 // The function returns an OR or all error codes detected, should be 0x00 if data is to be valid
 // Can be used to check if the module is present
 uint8_t SFPddm::getStatus(){
@@ -157,7 +180,7 @@ uint8_t SFPddm::getDDMmodes(){
 
 // The function acquires the measurements and returns an error code if sth went wrong, 0x00 is OK
 uint8_t SFPddm::readMeasurements(){
-  int i;
+  uint8_t i;
   //read diagnostic measurements registers 96-105 of 0xA2, store them in buffer
   error|=I2c.read(DDMADDR, 96, 22, (byte*)&raw_buffer);
 
@@ -167,7 +190,6 @@ uint8_t SFPddm::readMeasurements(){
     *p_meas++ =raw_buffer[i+1];
     *p_meas++ =raw_buffer[i];
   }
-
 
   //get raw values from hardware pins if enabled
   // txfaultstate (bit 2)
@@ -185,8 +207,6 @@ uint8_t SFPddm::readMeasurements(){
   }
   #endif
 
-
-
   //calibration if external data
   if(supported&0x10){
     measdata.temperature=calibrateTemperature(measdata.temperature, cal_general.t_slope, cal_general.t_off);
@@ -196,7 +216,7 @@ uint8_t SFPddm::readMeasurements(){
     measdata.RXpower=calibrateRXpower(measdata.RXpower, &cal_rxpower[0]);
   }
 
-return error;
+  return error;
 }
 
 uint8_t SFPddm::getVendor(char * vendor){
@@ -214,18 +234,61 @@ uint8_t SFPddm::getSerial(char * serial){
   return error;
 }
 
+uint8_t SFPddm::readTransChar(){
+  error|=I2c.read(INFOADDR, 0, 19, (byte*)&transchar);
+  error|=I2c.read(INFOADDR, 60, 2, (byte*)&raw_buffer);
+
+  uint8_t *p_wl = (uint8_t*)&transchar.wavelength;
+  *p_wl++ = raw_buffer[1];
+  *p_wl = raw_buffer[0];
+
+  return error;
+}
+
 uint8_t SFPddm::getBR(){
-  uint8_t br;
-  error|=I2c.read(INFOADDR, 12, 1, (byte*)&br);
-  return br;
+  return transchar.bitrate;
 }
 
 uint8_t SFPddm::getLength9m(){
-  uint8_t length;
-  error|=I2c.read(INFOADDR, 14, 1, (byte*)&length);
+  return transchar.length9m;
+}
+
+uint8_t SFPddm::getLength9mkm(){
+  return transchar.length9mkm;
+}
+
+uint8_t SFPddm::getLength50m(){
+  return transchar.length50m;
+}
+
+uint8_t SFPddm::getLength625m(){
+  return transchar.length625m;
+}
+
+uint8_t SFPddm::getLengthcu(){
+  return transchar.lengthcu;
+}
+
+uint16_t SFPddm::getLength(){
+  uint16_t length = 0;
+
+  if (transchar.length9mkm > 0) {
+    length = transchar.length9mkm * 256;
+  } else if (transchar.length9m > 0) {
+    length = transchar.length9m;
+  } else if (transchar.length50m > 0) {
+    length = transchar.length50m;
+  } else if (transchar.length625m > 0) {
+    length = transchar.length625m;
+  } else if (transchar.lengthcu > 0) {
+    length = transchar.lengthcu;
+  }
   return length;
 }
 
+uint16_t SFPddm::getWavelength(){
+  return transchar.wavelength;
+}
 
 // The function gets the value of the control register (0xA2 memory, register 110)
 uint8_t SFPddm::getControl(){
@@ -301,7 +364,7 @@ void SFPddm::getCalibrationData(){
   //read data
   error|=I2c.read(DDMADDR, 56, 36, &calData[0]);
   //loop variable
-  int i;
+  uint8_t i;
 
   //writing binary to the float register using pointers
   uint8_t *pRXcal = (uint8_t*)&cal_rxpower;

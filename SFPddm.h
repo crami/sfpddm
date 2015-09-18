@@ -63,8 +63,18 @@ class SFPddm
     uint8_t getVendor(char * vendor);
     uint8_t getPartNr(char * partnr);
     uint8_t getSerial(char * serial);
+    uint8_t readTransChar();
+
     uint8_t getBR();
     uint8_t getLength9m();
+    uint8_t getLength9mkm();
+    uint8_t getLength50m();
+    uint8_t getLength625m();
+    uint8_t getLengthcu();
+
+    uint16_t getLength();
+    uint16_t getWavelength();
+
     double uWtodBm(int uw);
 
   // library-accessible "private" interface
